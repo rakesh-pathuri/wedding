@@ -15,12 +15,12 @@ const ease = 0.08;
 const MOUSE_MAX = 35;
 const GYRO_MAX = 35;
 
-// Gyro calibration offsets
-let gyroOffsetX = null;
-let gyroOffsetY = null;
+// Gyro baseline (holding point = 0)
+let baseBeta = null;
+let baseGamma = null;
 
 // Clamp helper
-const clamp = (value, min, max) => Math.min(Math.max(value, min), max);
+const clamp = (v, min, max) => Math.min(Math.max(v, min), max);
 
 // Animation loop
 function animate() {
@@ -51,21 +51,25 @@ document.addEventListener('mousemove', (e) => {
 
 
 // ==================
-// Mobile Gyroscope (CALIBRATED)
+// Mobile Gyroscope (ZEROED AT HOLDING POINT)
 // ==================
 window.addEventListener('deviceorientation', (event) => {
     if (event.beta === null || event.gamma === null) return;
 
-    // Set baseline ONCE (natural holding position)
-    if (gyroOffsetX === null || gyroOffsetY === null) {
-        gyroOffsetX = event.beta;
-        gyroOffsetY = event.gamma;
+    // Set holding position as zero (ONCE)
+    if (baseBeta === null && baseGamma === null) {
+        baseBeta = event.beta;
+        baseGamma = event.gamma;
         return;
     }
 
     // Relative tilt from holding position
-    const gyroX = (event.beta - gyroOffsetX) / 2.2;
-    const gyroY = (event.gamma - gyroOffsetY) / 2.2;
+    const relativeBeta = event.beta - baseBeta;
+    const relativeGamma = event.gamma - baseGamma;
+
+    // Sensitivity scaling
+    const gyroX = relativeBeta / 2.2;
+    const gyroY = relativeGamma / 2.2;
 
     targetX = clamp(gyroX, -GYRO_MAX, GYRO_MAX);
     targetY = clamp(gyroY, -GYRO_MAX, GYRO_MAX);
@@ -83,3 +87,12 @@ document.addEventListener('touchmove', (e) => {
     targetX = clamp(x, -MOUSE_MAX, MOUSE_MAX);
     targetY = clamp(-y, -MOUSE_MAX, MOUSE_MAX);
 }, { passive: true });
+
+
+// ==================
+// OPTIONAL: Recalibrate on double tap
+// ==================
+document.addEventListener('dblclick', () => {
+    baseBeta = null;
+    baseGamma = null;
+});
