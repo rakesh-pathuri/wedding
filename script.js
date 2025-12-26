@@ -15,6 +15,10 @@ const ease = 0.08;
 const MOUSE_MAX = 35;
 const GYRO_MAX = 35;
 
+// Gyro calibration offsets
+let gyroOffsetX = null;
+let gyroOffsetY = null;
+
 // Clamp helper
 const clamp = (value, min, max) => Math.min(Math.max(value, min), max);
 
@@ -47,14 +51,21 @@ document.addEventListener('mousemove', (e) => {
 
 
 // ==================
-// Mobile Gyroscope (STRONGER ROTATION)
+// Mobile Gyroscope (CALIBRATED)
 // ==================
 window.addEventListener('deviceorientation', (event) => {
     if (event.beta === null || event.gamma === null) return;
 
-    // Increase sensitivity
-    const gyroX = event.beta / 2.2;
-    const gyroY = event.gamma / 2.2;
+    // Set baseline ONCE (natural holding position)
+    if (gyroOffsetX === null || gyroOffsetY === null) {
+        gyroOffsetX = event.beta;
+        gyroOffsetY = event.gamma;
+        return;
+    }
+
+    // Relative tilt from holding position
+    const gyroX = (event.beta - gyroOffsetX) / 2.2;
+    const gyroY = (event.gamma - gyroOffsetY) / 2.2;
 
     targetX = clamp(gyroX, -GYRO_MAX, GYRO_MAX);
     targetY = clamp(gyroY, -GYRO_MAX, GYRO_MAX);
